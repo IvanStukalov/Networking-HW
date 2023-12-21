@@ -15,8 +15,8 @@ h1 {
 
 body {
 	font-family: Arial, serif;
-	background-color: #C5E4DB;
-	color: #51607F;
+	background-color: #9dddf0;
+	color: #021130;
 }
 
 .container {
@@ -45,7 +45,7 @@ h1 {
 	cursor: pointer;
 	border-radius: 8px;
 	border: none;
-	background-color: #4ae6b9;
+	background-color: #4aa8e6;
 	color: #51607F;
 }
 
@@ -69,7 +69,8 @@ h1 {
 
 .button:disabled {
 	cursor: default;
-	background-color: #65b69f;
+	background-color: #3a4f6b;
+	color: aliceblue;
 }
 
 .responses {

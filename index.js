@@ -4,8 +4,6 @@ const path = require("path"); // импорт библиотеки path для �
 const app = express(); // создание экземпляра приложения express
 const PORT = 3000; // присвоения порта
 
-const generating = "1011"; // порождающий полином
-
 const MAX_RESPONSE_TIMEOUT = 3000;
 const MAX_TIMEOUT = 1000; // максимальное время ожидания ответа
 const MIN_TIMEOUT = 500; // минимальное время ожидания
@@ -82,8 +80,8 @@ app.get("/long-polling-request", (req, res) => {
 			res.send({
 				originalPoly: original,		// for example: 1010
 				encodedPoly: encoded,			// for example: 1010011
-				corruptedPoly: corrupted, 	// for example: 1010010
-				errorCount: errorCount,					// for example: 1
+				corruptedPoly: corrupted,	// for example: 1010010
+				errorCount: errorCount,		// for example: 1
 			});
 		}
 	}, Math.min(timeout, MAX_RESPONSE_TIMEOUT));
@@ -93,6 +91,44 @@ app.get("/long-polling-request", (req, res) => {
 app.listen(PORT, () => {
 	console.log(`Server started at http://localhost:${PORT}`);
 });
+
+// функция получения остатка
+const getRemainder = (polynomial) => {
+	// порождающий полином
+	const genPoly = "1011";
+
+	let rightBound = genPoly.length - 1;
+	let subDividend = polynomial.slice(0, rightBound + 1);
+	let remainder;
+
+	// итеративно берем делимое длиной с порождающий алгоритм и находим остаток
+	for (; rightBound < polynomial.length;) {
+		remainderNumber = (parseInt(subDividend, 2) ^ parseInt(genPoly, 2));
+		remainder = remainderNumber.toString(2);
+		subDividend = remainder;
+
+		// сдвигаем правую границу делимого
+		rightBound++;
+		if (rightBound < polynomial.length) {
+			for (; rightBound < polynomial.length && subDividend.length < genPoly.length;) {
+				subDividend += polynomial[rightBound++];
+			}
+
+			if (subDividend.length < genPoly.length) {
+				remainder = subDividend;
+			} else {
+				rightBound--;
+			}
+		}
+	}
+
+	// если еще можем поделить один раз
+	if (remainder.length > genPoly.length - 1) {
+		remainder = (parseInt(subDividend, 2) ^ parseInt(genPoly, 2)).toString(2);
+	}
+
+	return remainder;
+};
 
 const makeOneErr = (corrupted) => {
 	// рандомим позицию ошибки
@@ -126,36 +162,4 @@ const makeTwoErr = (corrupted) => {
 	corrupted = encodedArr.join("");
 
 	return corrupted;
-};
-
-const getRemainder = (polynomial) => {
-	let indexEnd = generating.length - 1;
-	let currentDigit = polynomial.slice(0, indexEnd + 1);
-	let remainder;
-
-	while (indexEnd < polynomial.length) {
-		remainder = (parseInt(currentDigit, 2) ^ parseInt(generating, 2)).toString(2);
-		currentDigit = remainder;
-
-		if (++indexEnd < polynomial.length) {
-			while (
-				indexEnd < polynomial.length &&
-				currentDigit.length < generating.length
-			) {
-				currentDigit += polynomial[indexEnd++];
-			}
-
-			if (currentDigit.length < generating.length) {
-				remainder = currentDigit;
-			} else {
-				indexEnd--;
-			}
-		}
-	}
-
-	if (remainder.length > generating.length - 1) {
-		remainder = (parseInt(currentDigit, 2) ^ parseInt(generating, 2)).toString(2);
-	}
-
-	return remainder;
 };

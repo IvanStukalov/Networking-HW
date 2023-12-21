@@ -1,4 +1,4 @@
-import { message } from "./message/message.js"; 
+import { message } from "./message/message.js";
 
 const list = document.getElementById("list"); // список ответов от сервера
 const startButton = document.getElementById("start"); // кнопка запуска long polling запросов
@@ -15,7 +15,7 @@ let originalPoly;
 
 const decoding = (data) => {
 	// распаковываем ответ
-	({corruptedPoly, encodedPoly, errorCount, originalPoly} = data);
+	({ corruptedPoly, encodedPoly, errorCount, originalPoly } = data);
 
 	// находим остаток
 	const remainder = getRemainder(corruptedPoly);
@@ -58,22 +58,25 @@ const decoding = (data) => {
 	}
 }
 
+// функция получения остатка
 const getRemainder = (polynomial) => {
 	let rightBound = genPoly.length - 1;
 	let subDividend = polynomial.slice(0, rightBound + 1);
 	let remainder;
 
+	// итеративно берем делимое длиной с порождающий алгоритм и находим остаток
 	for (; rightBound < polynomial.length;) {
 		remainder = (parseInt(subDividend, 2) ^ parseInt(genPoly, 2)).toString(2);
 		subDividend = remainder;
 
+		// сдвигаем правую границу делимого
 		rightBound++;
 		if (rightBound < polynomial.length) {
 			for (; rightBound < polynomial.length && subDividend.length < genPoly.length;) {
 				subDividend += polynomial[rightBound++];
 				subDividend = String(Number(subDividend));
 			}
-			
+
 			if (subDividend.length < genPoly.length) {
 				remainder = subDividend;
 			} else {
@@ -81,7 +84,7 @@ const getRemainder = (polynomial) => {
 			}
 		}
 	}
-	
+
 	return remainder;
 }
 
