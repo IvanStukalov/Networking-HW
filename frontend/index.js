@@ -5,64 +5,79 @@ const startButton = document.getElementById("start"); // кнопка запус
 const finishButton = document.getElementById("finish"); // кнопка завершения long polling запросов
 let isPolling = false; // текущее состояние запросов
 
-const generatingPolynomial = "1011";
+const genPoly = "1011";
 let verificationMatrix = ["1", "10", "100", "11", "110", "111", "101"];
 
-let corrupted_polynomial;
-let encoded_polynomial;
-let error_count; 
-let original_polynomial;
+let corruptedPoly;
+let encodedPoly;
+let errorCount;
+let originalPoly;
 
 const decoding = (data) => {
-	({corrupted_polynomial, encoded_polynomial, error_count, original_polynomial} = data);
+	// распаковываем ответ
+	({corruptedPoly, encodedPoly, errorCount, originalPoly} = data);
 
-	const remainder = getRemainder(corrupted_polynomial);
+	// находим остаток
+	const remainder = getRemainder(corruptedPoly);
 
+	// сравниваем с проверочной матрицей
 	let index = verificationMatrix.findIndex(element => element === remainder);
 
-	let decodedPolynomial = corrupted_polynomial.slice(0, corrupted_polynomial.length - 3);
+	// откидываем последние три бита
+	let decodedPoly = corruptedPoly.slice(0, corruptedPoly.length - 3);
 
-	if (index < 0) {
-		if (original_polynomial === decodedPolynomial) {
-			return message(original_polynomial, encoded_polynomial, corrupted_polynomial, decodedPolynomial, error_count, 1);
+	// собираем ответ
+	if (index < 0) {  // не нашли остаток в матрице -> считаем, что ответ правильный
+		if (originalPoly === decodedPoly) {
+			// если исходный и раскодированный полиномы равны, то все норм
+			return message(originalPoly, encodedPoly, corruptedPoly, decodedPoly, errorCount, 1);
 		} else {
-			return message(original_polynomial, encoded_polynomial, corrupted_polynomial, decodedPolynomial, error_count, 4);
+			// если не равны, то все плохо, мы не смогли определить ошибку (практически невозможный вариант)
+			return message(originalPoly, encodedPoly, corruptedPoly, decodedPoly, errorCount, 4);
 		}
-	} else {
-		let correctedPolynomial = corrupted_polynomial;
-		index = corrupted_polynomial.length - index - 1;
+	} else { // если нашли в матрице, то считаем, что ошибка есть
+		index = corruptedPoly.length - index - 1;
 
-		correctedPolynomial = correctedPolynomial.substring(0, index) + String(correctedPolynomial[index] ^ 1) + correctedPolynomial.substring(index + 1);
+		// строки в js неизменяемы, нужно перегонять в массив
+		let correctedPoly = corruptedPoly.split("");
 
-		decodedPolynomial = correctedPolynomial.slice(0, corrupted_polynomial.length - 3);
+		// меняем бит на противоположный
+		correctedPoly[index] = correctedPoly[index] === "0" ? "1" : "0";
 
-		if (original_polynomial === decodedPolynomial) {
-			return message(original_polynomial, encoded_polynomial, corrupted_polynomial, decodedPolynomial, error_count, 2);
+		// собираем обратно в строку
+		correctedPoly = correctedPoly.join("");
+
+		// раскодированный полином
+		decodedPoly = correctedPoly.slice(0, corruptedPoly.length - 3);
+
+		if (originalPoly === decodedPoly) {
+			return message(originalPoly, encodedPoly, corruptedPoly, decodedPoly, errorCount, 2);
 		} else {
-			return message(original_polynomial, encoded_polynomial, corrupted_polynomial, decodedPolynomial, error_count, 3)
+			return message(originalPoly, encodedPoly, corruptedPoly, decodedPoly, errorCount, 3)
 		}
 	}
 }
 
 const getRemainder = (polynomial) => {
-	let indexEnd = generatingPolynomial.length - 1;
-	let currentDigit = polynomial.slice(0, indexEnd + 1);
+	let rightBound = genPoly.length - 1;
+	let subDividend = polynomial.slice(0, rightBound + 1);
 	let remainder;
 
-	while (indexEnd < polynomial.length) {
-		remainder = (parseInt(currentDigit, 2) ^ parseInt(generatingPolynomial, 2)).toString(2);
-		currentDigit = remainder;
+	for (; rightBound < polynomial.length;) {
+		remainder = (parseInt(subDividend, 2) ^ parseInt(genPoly, 2)).toString(2);
+		subDividend = remainder;
 
-		if ((++indexEnd) < polynomial.length) {
-			while (indexEnd < polynomial.length && currentDigit.length < generatingPolynomial.length) {
-				currentDigit += polynomial[indexEnd++];
-				currentDigit = String(+currentDigit);
+		rightBound++;
+		if (rightBound < polynomial.length) {
+			for (; rightBound < polynomial.length && subDividend.length < genPoly.length;) {
+				subDividend += polynomial[rightBound++];
+				subDividend = String(Number(subDividend));
 			}
 			
-			if (currentDigit.length < generatingPolynomial.length) {
-				remainder = currentDigit;
+			if (subDividend.length < genPoly.length) {
+				remainder = subDividend;
 			} else {
-				indexEnd--;
+				rightBound--;
 			}
 		}
 	}
@@ -74,17 +89,17 @@ const subscribe = async () => {
 	try {
 		const response = await fetch("/long-polling-request");
 
-		const node = document.createElement("div");
-		node.style.marginBottom = "1em";
+		const div = document.createElement("div");
+		div.style.marginBottom = "1em";
 
 		if (response.status === 200) {
 			const data = await response.json();
-			node.innerHTML = decoding(data);
+			div.innerHTML = decoding(data);
 		} else if (response.status === 502) {
-			node.innerText = `Превышено время ожидания ответа от сервера`;
+			div.innerText = `Превышено время ожидания ответа от сервера`;
 		}
 
-		list.appendChild(node);
+		list.appendChild(div);
 
 		// если соединение еще не прервано, то рекурсивно запускаем функцию subscribe
 		if (isPolling) {

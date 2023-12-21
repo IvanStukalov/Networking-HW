@@ -6,9 +6,9 @@ const PORT = 3000; // присвоения порта
 
 const generating = "1011"; // порождающий полином
 
-const MAX_RESPONSE_TIMEOUT = 4000;
-const MAX_TIMEOUT = 5000; // максимальное время ожидания ответа
-const MIN_TIMEOUT = 1000; // минимальное время ожидания
+const MAX_RESPONSE_TIMEOUT = 3000;
+const MAX_TIMEOUT = 1000; // максимальное время ожидания ответа
+const MIN_TIMEOUT = 500; // минимальное время ожидания
 const MAX_VALUE = 15; // максимальное значение случайного числа
 const MIN_VALUE = 1; // минимальное значение случайного числа
 const ENCODED_POLY_LEN = 7;
@@ -34,25 +34,31 @@ app.get("/long-polling-request", (req, res) => {
 	const value = Math.round((MAX_VALUE - MIN_VALUE) * Math.random() + MIN_VALUE);
 	let original = value.toString(2);
 
+	// полином может быть < 4 битов длиной, поэтому дополняем
 	for (; original.length < POLY_LEN;) {
 		original = "0" + original;
 	}
 
+	// сдвигаем на 3 бита влево
+	let shifted = original + "000";
 
-	let encoded = original;
-	for (; encoded.length < ENCODED_POLY_LEN;) {
-		encoded += "0";
-	}
+	// находим остаток от деления на образующий полином
+	let remainder = getRemainder(shifted);
 
-	let remainder = getRemainder(encoded);
+	// остаток мб < 3 битов длиной
 	for (; remainder.length < ENCODED_POLY_LEN - POLY_LEN;) {
 		remainder = "0" + remainder;
 	}
 
-	encoded = (parseInt(encoded, 2) + parseInt(remainder, 2)).toString(2);
+	// закодированный полином = сдвинутый + остаток
+	let encoded = (parseInt(shifted, 2) + parseInt(remainder, 2)).toString(2);
+
+	// предыдущей командой мы переводили строку в число, поэтому закодированный полином может быть < 7 битов длиной
 	for (; encoded.length < ENCODED_POLY_LEN;) {
 		encoded = "0" + encoded;
 	}
+
+	// копируем закодированный полином, чтобы потом "портить" егоо копию
 	let corrupted = encoded;
 
 	// рандомим количество ошибок (от 0 до 2)
@@ -68,15 +74,16 @@ app.get("/long-polling-request", (req, res) => {
 		corrupted = makeTwoErr(corrupted);
 	}
 
+	// timeout для ответа
 	setTimeout(() => {
 		if (timeout > MAX_RESPONSE_TIMEOUT) {
 			res.sendStatus(502);
 		} else {
 			res.send({
-				original_polynomial: original,
-				encoded_polynomial: encoded,
-				corrupted_polynomial: corrupted,
-				error_count: errorCount,
+				originalPoly: original,		// for example: 1010
+				encodedPoly: encoded,			// for example: 1010011
+				corruptedPoly: corrupted, 	// for example: 1010010
+				errorCount: errorCount,					// for example: 1
 			});
 		}
 	}, Math.min(timeout, MAX_RESPONSE_TIMEOUT));
