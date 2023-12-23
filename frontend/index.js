@@ -88,7 +88,7 @@ const getRemainder = (polynomial) => {
 	return remainder;
 }
 
-const subscribe = async () => {
+const longPollingRequest = async () => {
 	try {
 		const response = await fetch("/long-polling-request");
 
@@ -104,18 +104,18 @@ const subscribe = async () => {
 
 		list.appendChild(div);
 
-		// если соединение еще не прервано, то рекурсивно запускаем функцию subscribe
+		// если соединение еще не прервано, то рекурсивно запускаем функцию
 		if (isPolling) {
-			subscribe();
+			longPollingRequest();
 		}
 	} catch (e) {
 		// если в процессе запроса возникла непредвиденная ошибка на сервере, то запускаем функцию через 1с
 		setTimeout(() => {
-			// если соединение еще не прервано, то рекурсивно запускаем функцию subscribe
+			// если соединение еще не прервано, то рекурсивно запускаем функцию
 			if (isPolling) {
-				subscribe();
+				longPollingRequest();
 			}
-		}, 1000);
+		}, 2500);
 	}
 };
 
@@ -125,7 +125,7 @@ const startConnectToServer = () => {
 	startButton.disabled = true;
 	isPolling = true;
 
-	subscribe();
+	longPollingRequest();
 };
 
 // функция вызывается при нажатии на кнопку "закончить"

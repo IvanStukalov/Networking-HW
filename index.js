@@ -4,11 +4,9 @@ const path = require("path"); // импорт библиотеки path для �
 const app = express(); // создание экземпляра приложения express
 const PORT = 3000; // присвоения порта
 
-const MAX_RESPONSE_TIMEOUT = 3000;
-const MAX_TIMEOUT = 1000; // максимальное время ожидания ответа
+const MAX_RESPONSE_TIMEOUT = 2500;
+const MAX_TIMEOUT = 3000; // максимальное время ожидания ответа
 const MIN_TIMEOUT = 500; // минимальное время ожидания
-const MAX_VALUE = 15; // максимальное значение случайного числа
-const MIN_VALUE = 1; // минимальное значение случайного числа
 const ENCODED_POLY_LEN = 7;
 const POLY_LEN = 4;
 
@@ -23,6 +21,9 @@ app.get("/", (req, res) => {
 
 // описание long polling запроса
 app.get("/long-polling-request", (req, res) => {
+	const MAX_VALUE = 15; // максимальное значение случайного числа
+	const MIN_VALUE = 1; // минимальное значение случайного числа
+
 	// выбирается случайное время ожидания из отрезка [1000, 10 000]
 	const timeout = Math.round(
 		(MAX_TIMEOUT - MIN_TIMEOUT) * Math.random() + MIN_TIMEOUT
@@ -97,9 +98,9 @@ const getRemainder = (polynomial) => {
 	// порождающий полином
 	const genPoly = "1011";
 
+	let remainder;
 	let rightBound = genPoly.length - 1;
 	let subDividend = polynomial.slice(0, rightBound + 1);
-	let remainder;
 
 	// итеративно берем делимое длиной с порождающий алгоритм и находим остаток
 	for (; rightBound < polynomial.length;) {

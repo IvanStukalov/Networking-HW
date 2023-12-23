@@ -43,7 +43,7 @@ h1 {
 	padding: 10px 15px;
 	font-size: 16px;
 	cursor: pointer;
-	border-radius: 8px;
+	/* border-radius: 8px; */
 	border: none;
 	background-color: #4aa8e6;
 	color: #51607F;
